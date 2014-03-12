@@ -39,8 +39,111 @@ DBMS-generic**
 ===
 
 ###2.环境准备:
-+ Lua在Mac OS X 平台的安装可使用homebrew非常方便:
++ Lua在Mac OS X 平台的安装可使用homebrew,也可自行编译:
 
-	brwe search lua
+	`brew search lua`
+
+	`brew install lua`
+
+	`brew link lua`
+
++ Download [Luasql](http://www.keplerproject.org/luasql/):
+
+	`wget http://files.luaforge.net/releases/luasql/luasql/LuaSQL2.1.1/luasql-2.1.1.tar.gz`
+
++ Download [Oracle-InstantClient](http://www.oracle.com/technetwork/database/features/instant-client/index-097480.html)
+
+	**编译luasql时需要以下几个包**:
 	
-`brew install lua`
+	`instantclient-basic-macos.x64-11.2.0.3.0.zip`
+	
+	`instantclient-sdk-macos.x64-11.2.0.3.0.zip`
+	
+	`instantclient-sqlplus-macos.x64-11.2.0.3.0.zip`
+	
+	**配置完成Oracle客户端后需要手动export一下DYLD_LIBRARY_PATH**
+	
+	Mac OSX:
+	`export DYLD_LIBRARY_PATH=/opt/oracleclient/instantclient_11_2/`
+	
+	Linux:
+	
+	`export LD_LIBRARY_PATH=$ORACLE_HOME/lib`
+	
+	完成Oracle客户端的配置后进行luasql的编译,不同平台编译需要更改config文件中的部分参数,以Mac OSX 10.9安装Oracle的oci8为例:
+	
+	
+		formating$ cat config**
+		
+		# Driver (leave uncommented ONLY the line with the name of the driver)
+		#T= mysql
+		#T= odbc
+		#T= postgres
+		#T= sqlite
+		#T= sqlite3
+		T= oci8
+
+		# Installation directories
+
+		# Default prefix
+		PREFIX = /usr/local
+
+		# System's libraries directory (where binary libraries are installed)
+		LUA_LIBDIR= $(PREFIX)/lib/lua/5.1
+
+		# System's lua directory (where Lua libraries are installed)
+		LUA_DIR= $(PREFIX)/share/lua/5.1
+
+		# Lua includes directory
+		LUA_INC= $(PREFIX)/include
+
+		# Lua version number (first and second digits of target version)
+		LUA_VERSION_NUM= 501
+
+		# OS dependent
+		#LIB_OPTION= -shared #for Linux
+		LIB_OPTION= -bundle -undefined dynamic_lookup #for MacOS X
+
+		LIBNAME= $T.so
+		COMPAT_DIR= ../compat/src
+
+		# Compilation parameters
+		# Driver specific
+		######## MySQL
+		#DRIVER_LIBS= -L/usr/local/mysql/lib -lmysqlclient -lz
+		#DRIVER_INCS= -I/usr/local/mysql/include
+		######## Oracle OCI8
+		DRIVER_LIBS= -L/opt/oracleclient/instantclient_11_2 -lz -lclntsh
+		DRIVER_INCS= -I/opt/oracleclient/instantclient_11_2/sdk/demo -I/opt/oracleclient/instantclient_11_2/sdk/include
+		######## PostgreSQL
+		#DRIVER_LIBS= -L/usr/local/pgsql/lib -lpq
+		#DRIVER_INCS= -I/usr/local/pgsql/include
+		######## SQLite
+		#DRIVER_LIBS= -lsqlite
+		#DRIVER_INCS=
+		######## SQLite3 
+		#DRIVER_LIBS= -L/opt/local/lib -lsqlite3
+		#DRIVER_INCS= -I/opt/local/include
+		######## ODBC
+		#DRIVER_LIBS= -L/usr/local/lib -lodbc
+		#DRIVER_INCS= -DUNIXODBC -I/usr/local/include
+
+		WARN= -Wall -Wmissing-prototypes -Wmissing-declarations -ansi -pedantic
+		INCS= -I$(LUA_INC)
+		CFLAGS= -O2 $(WARN) -I$(COMPAT_DIR) $(DRIVER_INCS) $(INCS) $(DEFS)
+		CC= gcc
+
+		# $Id: config,v 1.8 2007/10/27 22:55:27 carregal Exp $
+
+	修改完以后`make`一下，如果无误的话直接`make install`就安装到lua的默认lib目录了。
+	
+	> Module 默认路径在:/usr/local/lib/lua/5.1/
+	
+	> 验证一下模块是否正常加载: 
+	
+		formating$ lua
+		Lua 5.1.5  Copyright (C) 1994-2012 Lua.org, PUC-Rio
+		> 
+		> oci = require "luasql.oci8"
+		
+	
